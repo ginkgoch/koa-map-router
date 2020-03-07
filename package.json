@@ -16,19 +16,19 @@
     "ts-loader": "^6.0.4",
     "typescript": "^3.5.3",
     "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.6",
+    "webpack-cli": "^3.3.6"
+  },
+  "dependencies": {
     "koa": "^2.11.0",
-    "koa-body": "^4.1.1"
+    "koa-body": "^4.1.1",
+    "canvas": "^2.6.1",
+    "ginkgoch-map": "^1.12.1",
+    "koa-router": "^8.0.8",
+    "lodash": "^4.17.15"
   },
   "scripts": {
     "test": "./node_modules/.bin/jest",
     "clean": "rm -rf dist",
     "build": "rm -rf dist && ./node_modules/.bin/webpack"
-  },
-  "dependencies": {
-    "canvas": "^2.6.1",
-    "ginkgoch-map": "^1.12.1",
-    "koa-router": "^8.0.8",
-    "lodash": "^4.17.15"
   }
 }

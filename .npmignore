@@ -5,3 +5,4 @@
 /jest.config.js
 /docs
 /webpack.config
+**/.DS_Store

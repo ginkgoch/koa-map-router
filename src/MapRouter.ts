@@ -4,7 +4,7 @@ import Router, { RouterContext } from 'koa-router';
 import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection, ShapefileFeatureSource } from 'ginkgoch-map';
 import { FilterUtils, MapUtils } from './shared';
 
-interface MapRouterOptions {
+export interface MapRouterOptions {
     initMap?: () => MapEngine;
 }
 
