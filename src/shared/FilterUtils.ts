@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { RouterContext } from "koa-router";
-import { IEnvelope, IFeature } from "ginkgoch-geom";
+import { IEnvelope, IFeature, Point } from "ginkgoch-geom";
 import { MapEngine, Projection } from "ginkgoch-map";
 import { MapUtils } from "./MapUtils";
 
@@ -55,8 +55,8 @@ export class FilterUtils {
     //#endregion
 
     //#region features
-    static parseFeaturesFilter(ctx: RouterContext): FeaturesFilter {
-        // ?fields=[]&from=0&limit=10&envelope=-180,-90，180，90
+    static parseFeaturesFilter(ctx: RouterContext, mapEngine: MapEngine): FeaturesFilter {
+        // ?fields=[]&from=0&limit=10&envelope=-180,-90，180，90&latlng=31.23,121.47
 
         const filter: FeaturesFilter = {};
         if (ctx.query.fields !== undefined) {
@@ -69,6 +69,20 @@ export class FilterUtils {
 
         if (ctx.query.limit !== undefined) {
             filter.limit = parseInt(<string>ctx.query.limit);
+        }
+
+        if (ctx.query.latlng != undefined) {
+            let [lat, lng] = ctx.query.latlng.split(',').map((s: string) => parseFloat(s));
+            if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+                let projection = new Projection('WGS84', mapEngine.srs);
+                let point = new Point(lng, lat);
+                if (projection.isValid) {
+                    point = <Point>projection.forward(point);
+                }
+                
+                let [ minx, miny, maxx, maxy ] = [point.x - 1e-8, point.y - 1e-8, point.x + 1e-8, point.y + 1e-8];
+                filter.envelope = { minx, miny, maxx, maxy };
+            }
         }
 
         if (ctx.query.envelope !== undefined) {

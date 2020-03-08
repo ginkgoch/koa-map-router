@@ -173,7 +173,7 @@ export class MapRouter {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
         }
         else {
-            const filter = FilterUtils.parseFeaturesFilter(ctx);
+            const filter = FilterUtils.parseFeaturesFilter(ctx, mapEngine);
 
             try {
                 await layer.open();
@@ -196,7 +196,7 @@ export class MapRouter {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
         }
         else {
-            const filter = FilterUtils.parseFeaturesFilter(ctx);
+            const filter = FilterUtils.parseFeaturesFilter(ctx, mapEngine);
 
             try {
                 await layer.open();
@@ -217,7 +217,7 @@ export class MapRouter {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
         }
         else {
-            const filter = FilterUtils.parseFeaturesFilter(ctx);
+            const filter = FilterUtils.parseFeaturesFilter(ctx, mapEngine);
             const fieldName = ctx.params.field;
 
             try {
