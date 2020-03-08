@@ -1,7 +1,7 @@
 /src/
 /tests/
-/built/tests/
 /tsconfig.json
 /jest.config.js
 /docs
 /webpack.config
+**/.DS_Store

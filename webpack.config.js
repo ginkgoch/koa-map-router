@@ -6,7 +6,7 @@ module.exports = {
   target: "node",
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: "bundle.js",
+    filename: "[name].js",
     libraryTarget: "umd"
   },
   module: {
@@ -31,7 +31,23 @@ module.exports = {
       commonjs2: "lodash",
       amd: "lodash",
       root: "_"
-    }
+    },
+    ...getExternals()
   },
   devtool: 'source-map'
 };
+
+function getExternals() {
+  let modules = ['koa', 'koa-body', 'koa-router', 'ginkgoch-map', 'canvas'];
+  let externals = { };
+  modules.forEach(m => { 
+    externals[m] = {
+      commonjs: m,
+      commonjs2: m,
+      amd: m,
+      root: m
+    }
+  });
+
+  return externals;
+}
