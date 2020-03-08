@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import bodyParser from 'koa-body';
 import Router, { RouterContext } from 'koa-router';
-import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection, ShapefileFeatureSource } from 'ginkgoch-map';
+import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection, ShapefileFeatureSource, IFeature } from 'ginkgoch-map';
 import { FilterUtils, MapUtils } from '../shared';
 
 export interface MapRouterOptions {
@@ -177,8 +177,10 @@ export class MapRouter {
 
             try {
                 await layer.open();
-                let features = await layer.source.features(filter.envelope, filter.fields);
+                let features: IFeature[] = await layer.source.features(filter.envelope, filter.fields);
                 features = FilterUtils.applyFeaturesFilter(features, filter);
+                features = FilterUtils.applySimplifyFilter(features, ctx, mapEngine);
+                features = FilterUtils.applyFeaturesCRS(features, ctx, mapEngine);
                 this._json(ctx, MapUtils.featuresToJSON(features));
             }
             finally {

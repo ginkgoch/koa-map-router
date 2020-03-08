@@ -1,6 +1,8 @@
 import _ from "lodash";
 import { RouterContext } from "koa-router";
-import { IEnvelope, Feature } from "ginkgoch-geom";
+import { IEnvelope, IFeature } from "ginkgoch-geom";
+import { MapEngine, Projection } from "ginkgoch-map";
+import { MapUtils } from "./MapUtils";
 
 export class FilterUtils {
     //#region field types
@@ -80,7 +82,44 @@ export class FilterUtils {
         return filter;
     }
 
-    static applyFeaturesFilter(features: Feature[], filter: FeaturesFilter): Feature[] {
+    static applySimplifyFilter(features: IFeature[], ctx: RouterContext, mapEngine: MapEngine): IFeature[] {
+        let { simplifyZoom, simplifyTolerance } = ctx.query;
+
+        if (simplifyZoom === undefined) {
+            return features;
+        }
+
+        simplifyZoom = parseInt(simplifyZoom);
+        if (Number.isNaN(simplifyZoom)) {
+            return features;
+        }
+
+        simplifyTolerance = parseInt(simplifyTolerance);
+        if (Number.isNaN(simplifyTolerance)) {
+            simplifyTolerance = 1;
+        }
+
+        let featureCRS = mapEngine.srs.projection!;
+        let scale = mapEngine.scales[simplifyZoom];
+
+        return MapUtils.simplifyFeatures(features, featureCRS, scale, simplifyTolerance);
+    }
+
+    static applyFeaturesCRS(features: IFeature[], ctx: RouterContext, mapEngine: MapEngine): IFeature[] {
+        let { outCRS } = ctx.query;
+        if (outCRS === undefined) {
+            return features;
+        }
+
+        let projection = new Projection(mapEngine.srs, outCRS);
+        if (projection.isValid) {
+            features.forEach(f => f.geometry = projection.forward(f.geometry));
+        }
+
+        return features;
+    }
+
+    static applyFeaturesFilter(features: IFeature[], filter: FeaturesFilter): IFeature[] {
         let from = 0;
         let limit = features.length;
         if (filter.from) {
