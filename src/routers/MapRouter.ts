@@ -19,29 +19,29 @@ export class MapRouter {
     getRouter(): Router {
         let router = new Router();
 
-        router.get('get map', '/', this.$getMapEngineRoute);
+        router.get('get map', '/', this.$getMapEngineRoute.bind(this));
 
-        router.put('edit map', '/', bodyParser(), this.$editMapEngineRoute);
+        router.put('edit map', '/', bodyParser(), this.$editMapEngineRoute.bind(this));
 
-        router.get('get xyz tile', '/tiles/xyz/:z/:x/:y', this.$getMapXyzTile);
+        router.get('get xyz tile', '/tiles/xyz/:z/:x/:y', this.$getMapXyzTile.bind(this));
 
-        router.get('get intersected features', '/query/intersection', this.$getIntersection);
+        router.get('get intersected features', '/query/intersection', this.$getIntersection.bind(this));
 
-        router.get('get groups', '/groups', this.$getLayerGroups);
+        router.get('get groups', '/groups', this.$getLayerGroups.bind(this));
 
-        router.get('get a group', '/groups/:group', this.$getLayerGroup);
+        router.get('get a group', '/groups/:group', this.$getLayerGroup.bind(this));
 
-        router.get('get layers from group', '/groups/:group/layers', this.$getLayers);
+        router.get('get layers from group', '/groups/:group/layers', this.$getLayers.bind(this));
 
-        router.get('get a layer from group', '/groups/:group/layers/:layer', this.$getLayer);
+        router.get('get a layer from group', '/groups/:group/layers/:layer', this.$getLayer.bind(this));
 
-        router.get('get features from a layer in group', '/groups/:group/layers/:layer/features', this.$getFeatures);
+        router.get('get features from a layer in group', '/groups/:group/layers/:layer/features', this.$getFeatures.bind(this));
         
-        router.get('get properties from a layer in group', '/groups/:group/layers/:layer/properties', this.$getProperties);
+        router.get('get properties from a layer in group', '/groups/:group/layers/:layer/properties', this.$getProperties.bind(this));
         
-        router.get('get property from a layer in group', '/groups/:group/layers/:layer/properties/:field', this.$getProperty);
+        router.get('get property from a layer in group', '/groups/:group/layers/:layer/properties/:field', this.$getProperty.bind(this));
         
-        router.get('get fields from a layer in group', '/groups/:group/layers/:layer/fields', this.$getProperty);
+        router.get('get fields from a layer in group', '/groups/:group/layers/:layer/fields', this.$getFields.bind(this));
 
         return router;
     }
@@ -145,7 +145,7 @@ export class MapRouter {
 
     private async $getLayer(ctx: RouterContext) {
         const mapEngine = this._getMapEngine();
-        const layer = mapEngine.layer(ctx.params.layer, ctx.params.group); 
+        const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
         }
@@ -162,7 +162,7 @@ export class MapRouter {
             }
 
             json = FilterUtils.applyLayerFilterFromContext(json, ctx);
-            this._json(json, ctx);
+            this._json(ctx, json);
         }
     }
 
@@ -233,6 +233,28 @@ export class MapRouter {
         }
     }
 
+    private async $getFields(ctx: RouterContext) {
+        const mapEngine = this._getMapEngine();
+        const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
+        if (layer === undefined) {
+            this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
+        }
+        else {
+            try {
+                await layer.open();
+                const fields = await layer.source.fields();
+
+                let fieldsJSON: any[] = fields.map(f => f.toJSON());
+                fieldsJSON = FilterUtils.applyFieldTypesFilterFromContext(fieldsJSON, ctx);
+                fieldsJSON = FilterUtils.applyFieldsFilterFromContext(fieldsJSON, ctx);
+
+                this._json(ctx, fieldsJSON);
+            }
+            finally {
+                await layer.close();
+            }
+        }
+    }
 
     private _json(ctx: RouterContext, json: any, status: number = 200) {
         ctx.body = json;

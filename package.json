@@ -12,6 +12,7 @@
     "@types/koa-compress": "^2.0.9",
     "@types/koa-logger": "^3.1.1",
     "@types/koa-router": "^7.4.0",
+    "@types/koa__cors": "^3.0.1",
     "@types/node": "^12.12.29",
     "jest": "^25.1.0",
     "jest-cli": "^25.1.0",
@@ -19,6 +20,7 @@
     "koa-logger": "^3.2.1",
     "ts-jest": "^24.0.2",
     "ts-loader": "^6.0.4",
+    "ts-node": "^8.6.2",
     "typescript": "^3.5.3",
     "webpack": "^4.39.1",
     "webpack-cli": "^3.3.6"
@@ -32,7 +34,7 @@
     "lodash": "^4.17.15"
   },
   "scripts": {
-    "test": "./node_modules/.bin/jest",
+    "test": "ts-node tests/index.ts",
     "clean": "rm -rf dist",
     "build": "rm -rf dist && ./node_modules/.bin/webpack"
   }

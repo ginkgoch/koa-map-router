@@ -9,7 +9,7 @@ export class MapUtils {
         // Init the map rendering spatial reference system
         mapEngine.srs = new Srs('EPSG:900913');
 
-        let sourcePath = path.resolve(__dirname, '../data/cntry02');
+        let sourcePath = path.resolve(__dirname, '../data/cntry02.shp');
 
         // Create a feature source instance
         let source = new ShapefileFeatureSource(sourcePath);

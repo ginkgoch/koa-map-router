@@ -2,7 +2,7 @@ import Koa from "koa";
 import compress from 'koa-compress';
 import cors from '@koa/cors';
 import logger from 'koa-logger';
-import { MapRouter } from '../src/routers';
+import { MapRouter } from '../src';
 import { MapUtils } from './utils';
 
 const port = 3000;
