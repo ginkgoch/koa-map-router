@@ -36,6 +36,8 @@ export class MapRouter {
         router.get('get a layer from group', '/groups/:group/layers/:layer', this.$getLayer.bind(this));
 
         router.get('get features from a layer in group', '/groups/:group/layers/:layer/features', this.$getFeatures.bind(this));
+
+        router.post('query features from a layer in group', '/groups/:group/layers/:layer/query', bodyParser(), this.$queryFeatures.bind(this));
         
         router.get('get properties from a layer in group', '/groups/:group/layers/:layer/properties', this.$getProperties.bind(this));
         
@@ -179,6 +181,37 @@ export class MapRouter {
                 await layer.open();
                 let features: IFeature[] = await layer.source.features(filter.envelope, filter.fields);
                 features = FilterUtils.applyFeaturesFilter(features, filter);
+                features = FilterUtils.applySimplifyFilter(features, ctx, mapEngine);
+                features = FilterUtils.applyFeaturesCRS(features, ctx, mapEngine);
+                this._json(ctx, MapUtils.featuresToJSON(features));
+            }
+            finally {
+                await layer.close();
+            }
+        }
+    }
+
+    private async $queryFeatures(ctx: RouterContext) {
+        const mapEngine = this._getMapEngine();
+        const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
+        if (layer === undefined) {
+            this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
+        }
+        else {
+            const bodyContent = this._parseRequestBody(ctx);
+            const queryFilter = FilterUtils.parseQueryFilter(bodyContent);
+
+            if (queryFilter === undefined) {
+                ctx.throw('400', 'Invalid query body');
+            }
+
+            try {
+                await layer.open();
+                let { relation, geometry, geometryCRS, fields } = queryFilter;
+                let features: IFeature[] = await layer.source.query(relation, geometry, geometryCRS, fields);
+
+                let featuresFilter = FilterUtils.parseFeaturesFilter(ctx, mapEngine);
+                features = FilterUtils.applyFeaturesFilter(features, featuresFilter);
                 features = FilterUtils.applySimplifyFilter(features, ctx, mapEngine);
                 features = FilterUtils.applyFeaturesCRS(features, ctx, mapEngine);
                 this._json(ctx, MapUtils.featuresToJSON(features));

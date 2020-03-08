@@ -26,10 +26,10 @@
     "webpack-cli": "^3.3.6"
   },
   "dependencies": {
+    "canvas": "^2.6.1",
+    "ginkgoch-map": "^1.12.2",
     "koa": "^2.11.0",
     "koa-body": "^4.1.1",
-    "canvas": "^2.6.1",
-    "ginkgoch-map": "^1.12.1",
     "koa-router": "^8.0.8",
     "lodash": "^4.17.15"
   },

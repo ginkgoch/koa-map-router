@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { RouterContext } from "koa-router";
-import { IEnvelope, IFeature, Point } from "ginkgoch-geom";
-import { MapEngine, Projection } from "ginkgoch-map";
+import { IEnvelope, IFeature, Point, Geometry, GeometryFactory } from "ginkgoch-geom";
+import { MapEngine, Projection, SpatialQueryRelationship } from "ginkgoch-map";
 import { MapUtils } from "./MapUtils";
 
 export class FilterUtils {
@@ -79,7 +79,7 @@ export class FilterUtils {
                 if (projection.isValid) {
                     point = <Point>projection.forward(point);
                 }
-                
+
                 let [ minx, miny, maxx, maxy ] = [point.x - 1e-8, point.y - 1e-8, point.x + 1e-8, point.y + 1e-8];
                 filter.envelope = { minx, miny, maxx, maxy };
             }
@@ -273,6 +273,22 @@ export class FilterUtils {
         return layerJSON;
     }
     //#endregion
+
+    //#region query 
+    static parseQueryFilter(bodyContent: any): QueryFilter|undefined {
+        if (bodyContent === undefined || bodyContent.geometry === undefined) {
+            return undefined;
+        }
+
+        let geometry = GeometryFactory.create(bodyContent.geometry);
+        let relation = _.defaultTo(bodyContent.relation, 'intersection');
+        let geometryCRS = _.defaultTo(bodyContent.geometryCRS, undefined);
+        let fields = _.defaultTo(bodyContent.fields, 'all');
+        let filter = { geometry, relation, geometryCRS, fields };
+
+        return filter;
+    }
+    //#endregion
 }
 
 export interface FeaturesFilter {
@@ -280,6 +296,13 @@ export interface FeaturesFilter {
     from?: number,
     limit?: number,
     envelope?: IEnvelope
+}
+
+export interface QueryFilter {
+    relation: SpatialQueryRelationship
+    geometry: Geometry,
+    geometryCRS?: string,
+    fields: string[] | 'all' | 'none'
 }
 
 export enum Aggregators {
