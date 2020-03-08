@@ -2,7 +2,7 @@ import _ from 'lodash';
 import bodyParser from 'koa-body';
 import Router, { RouterContext } from 'koa-router';
 import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection, ShapefileFeatureSource } from 'ginkgoch-map';
-import { FilterUtils, MapUtils } from './shared';
+import { FilterUtils, MapUtils } from '../shared';
 
 export interface MapRouterOptions {
     initMap?: () => MapEngine;
