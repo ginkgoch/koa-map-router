@@ -1,6 +1,6 @@
 {
   "name": "ginkgoch-koa-map-router",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This is Koa map router provided by Ginkgoch. It contains predefined mapping APIs including spatial analysis, map state query as well as map rendering.",
   "main": "dist/bundle.js",
   "types": "dist/index.d.ts",
