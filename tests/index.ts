@@ -20,7 +20,7 @@ function serve() {
     app.use(mapRouter.routes()).use(mapRouter.allowedMethods());
 
     app.listen(port, () => {
-        console.log(`Server listening on port ${port}, visit http://localhost:${port}`);
+        console.log(`Server listening on http://localhost:${port}`);
     });
 }
 

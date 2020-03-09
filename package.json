@@ -1,7 +1,7 @@
 {
-  "name": "node-ts-template",
-  "version": "0.0.1",
-  "description": "This is a typescript library project template.",
+  "name": "ginkgoch-koa-map-router",
+  "version": "1.0.0",
+  "description": "This is Koa map router provided by Ginkgoch. It contains predefined mapping APIs including spatial analysis, map state query as well as map rendering.",
   "main": "dist/bundle.js",
   "types": "dist/index.d.ts",
   "author": "Ginkgoch",
@@ -23,18 +23,25 @@
     "ts-node": "^8.6.2",
     "typescript": "^3.5.3",
     "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.6"
-  },
-  "dependencies": {
-    "canvas": "^2.6.1",
-    "ginkgoch-map": "^1.12.2",
+    "webpack-cli": "^3.3.6",
     "koa": "^2.11.0",
     "koa-body": "^4.1.1",
     "koa-router": "^8.0.8",
     "lodash": "^4.17.15"
   },
+  "peerDependencies": {
+    "koa": "^2.11.0",
+    "koa-body": "^4.1.1",
+    "koa-router": "^8.0.8",
+    "lodash": "^4.17.15"
+  },
+  "dependencies": {
+    "canvas": "^2.6.1",
+    "ginkgoch-map": "^1.12.2"
+  },
   "scripts": {
     "test": "ts-node tests/index.ts",
+    "doc": "ts-node scripts/docgen.ts",
     "clean": "rm -rf dist",
     "build": "rm -rf dist && ./node_modules/.bin/webpack"
   }
