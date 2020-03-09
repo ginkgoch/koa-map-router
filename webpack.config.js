@@ -6,7 +6,7 @@ module.exports = {
   target: "node",
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: "[name].js",
+    filename: "bundle.js",
     libraryTarget: "umd"
   },
   module: {
@@ -38,7 +38,8 @@ module.exports = {
 };
 
 function getExternals() {
-  let modules = ['koa', 'koa-body', 'koa-router', 'ginkgoch-map', 'canvas'];
+  let modules = ['koa', 'koa-body', 'koa-router', 'canvas', 'jsts', 'csv-parse', 'proj4',
+    'ginkgoch-map', 'ginkgoch-geom', 'ginkgoch-buffer-io', 'ginkgoch-filestream', 'ginkgoch-shapefile'];
   let externals = { };
   modules.forEach(m => { 
     externals[m] = {
