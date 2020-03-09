@@ -35,6 +35,7 @@
   },
   "scripts": {
     "test": "ts-node tests/index.ts",
+    "doc": "ts-node scripts/docgen.ts",
     "clean": "rm -rf dist",
     "build": "rm -rf dist && ./node_modules/.bin/webpack"
   }
