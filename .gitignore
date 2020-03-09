@@ -2,3 +2,4 @@ node_modules/
 dist/
 yarn.lock
 /scripts/doc-by-postman.*
+**/.DS_Store

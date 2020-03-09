@@ -32,14 +32,14 @@ module.exports = {
       amd: "lodash",
       root: "_"
     },
-    ...getExternals()
+    ...getExternals(),
   },
   devtool: 'source-map'
 };
 
 function getExternals() {
   let modules = ['koa', 'koa-body', 'koa-router', 'canvas', 'jsts', 'csv-parse', 'proj4',
-    'ginkgoch-map', 'ginkgoch-geom', 'ginkgoch-buffer-io', 'ginkgoch-filestream', 'ginkgoch-shapefile'];
+    'ginkgoch-map', 'ginkgoch-geom', 'ginkgoch-buffer-io', 'ginkgoch-filestream', 'ginkgoch-shapefile', 'ginkgoch-map/native/node'];
   let externals = { };
   modules.forEach(m => { 
     externals[m] = {
