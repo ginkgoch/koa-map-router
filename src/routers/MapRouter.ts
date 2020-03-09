@@ -1,82 +1,144 @@
 import _ from 'lodash';
 import bodyParser from 'koa-body';
 import Router, { RouterContext } from 'koa-router';
-import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection, ShapefileFeatureSource, IFeature } from 'ginkgoch-map';
+import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection, ShapefileFeatureSource, IFeature, TileCache } from 'ginkgoch-map';
 import { FilterUtils, MapUtils } from '../shared';
 
 export interface MapRouterOptions {
-    initMap?: () => MapEngine;
+    initMap?: (name: string) => MapEngine;
+    enableTileCache?: boolean;
+    cacheTilesCapacity?: number;
 }
 
 export class MapRouter {
     private _options: MapRouterOptions;
-    private _mapEngine?: MapEngine;
+    private _mapEnginesCache = new Map<string, MapEngine>();
+    private _mapTileCache = new Map<string, TileCache<Buffer>>();
 
     constructor(mapRouterOptions?: MapRouterOptions) {
-        this._options = _.defaults(mapRouterOptions, { initMap: () => new MapEngine() });
+        this._options = _.defaults(mapRouterOptions, { initMap: () => new MapEngine(), enableTileCache: true, cacheTilesCapacity: 128 });
     }
 
     getRouter(): Router {
         let router = new Router();
 
-        router.get('get map', '/', this.$getMapEngineRoute.bind(this));
+        router.get('get map', '/maps/:map', this.$getMapEngineRoute.bind(this));
 
-        router.put('edit map', '/', bodyParser(), this.$editMapEngineRoute.bind(this));
+        router.put('edit map', '/maps/:map', bodyParser(), this.$editMapEngineRoute.bind(this));
 
-        router.get('get xyz tile', '/tiles/xyz/:z/:x/:y', this.$getMapXyzTile.bind(this));
+        router.get('get xyz tile', '/maps/:map/tiles/xyz/:z/:x/:y', this.$getMapXyzTile.bind(this));
 
-        router.get('get intersected features', '/query/intersection', this.$getIntersection.bind(this));
+        router.get('get intersected features', '/maps/:map/query/intersection', this.$getIntersection.bind(this));
 
-        router.get('get groups', '/groups', this.$getLayerGroups.bind(this));
+        router.get('get groups', '/maps/:map/groups', this.$getLayerGroups.bind(this));
 
-        router.get('get a group', '/groups/:group', this.$getLayerGroup.bind(this));
+        router.get('get a group', '/maps/:map/groups/:group', this.$getLayerGroup.bind(this));
 
-        router.get('get layers from group', '/groups/:group/layers', this.$getLayers.bind(this));
+        router.get('get layers from group', '/maps/:map/groups/:group/layers', this.$getLayers.bind(this));
 
-        router.get('get a layer from group', '/groups/:group/layers/:layer', this.$getLayer.bind(this));
+        router.get('get a layer from group', '/maps/:map/groups/:group/layers/:layer', this.$getLayer.bind(this));
 
-        router.get('get features from a layer in group', '/groups/:group/layers/:layer/features', this.$getFeatures.bind(this));
+        router.get('get features from a layer in group', '/maps/:map/groups/:group/layers/:layer/features', this.$getFeatures.bind(this));
 
-        router.post('query features from a layer in group', '/groups/:group/layers/:layer/query', bodyParser(), this.$queryFeatures.bind(this));
+        router.post('query features from a layer in group', '/maps/:map/groups/:group/layers/:layer/query', bodyParser(), this.$queryFeatures.bind(this));
         
-        router.get('get properties from a layer in group', '/groups/:group/layers/:layer/properties', this.$getProperties.bind(this));
+        router.get('get properties from a layer in group', '/maps/:map/groups/:group/layers/:layer/properties', this.$getProperties.bind(this));
         
-        router.get('get property from a layer in group', '/groups/:group/layers/:layer/properties/:field', this.$getProperty.bind(this));
+        router.get('get property from a layer in group', '/maps/:map/groups/:group/layers/:layer/properties/:field', this.$getProperty.bind(this));
         
-        router.get('get fields from a layer in group', '/groups/:group/layers/:layer/fields', this.$getFields.bind(this));
+        router.get('get fields from a layer in group', '/maps/:map/groups/:group/layers/:layer/fields', this.$getFields.bind(this));
 
         return router;
     }
 
-    private _getMapEngine() {
-        if (this._mapEngine === undefined) {
-            this._mapEngine = this._options.initMap!();
+    private _getMapEngine(ctx: RouterContext) {
+        let name = this._getMapEngineName(ctx);
+
+        let mapEngine: MapEngine|undefined = undefined;
+        if (this._mapEnginesCache.has(name)) {
+            mapEngine = this._mapEnginesCache.get(name);
         }
 
-        return this._mapEngine;
+        if (mapEngine === undefined) {
+            mapEngine = this._options.initMap!(name);
+            this._mapEnginesCache.set(name, mapEngine);
+        }
+
+        if (mapEngine === undefined) {
+            ctx.throw(404, `Map "${name}" not found`);
+        }
+
+        return mapEngine;
+    }
+
+    private _getMapEngineName(ctx: RouterContext) {
+        let name = ctx.params.map;
+        if (name === undefined) {
+            ctx.throw(400, 'Map name is not specified');
+        }
+        return name;
+    }
+
+    private _getMapTileCache(ctx: RouterContext) {
+        if (!this._options.enableTileCache) {
+            return undefined;
+        }
+
+        let name = this._getMapEngineName(ctx);
+        let tileCache: TileCache<Buffer>|undefined = undefined;
+        if (this._mapTileCache.has(name)) {
+            tileCache = this._mapTileCache.get(name);
+        }
+
+        if (tileCache === undefined) {
+            tileCache = new TileCache<Buffer>(this._options.cacheTilesCapacity);
+            this._mapTileCache.set(name, tileCache);
+        }
+
+        return tileCache;
+    }
+
+    private _clearMapTileCache(name: string) {
+        let tileCache = this._mapTileCache.get(name);
+        if (tileCache !== undefined) {
+            tileCache.clear();
+        }
     }
 
     private $getMapEngineRoute(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         this._json(ctx, mapEngine);
     }
 
     private $editMapEngineRoute(ctx: RouterContext) {
         let requestBody = this._parseRequestBody(ctx);
         let mapEngine = MapEngine.parseJSON(requestBody);
-        this._mapEngine = mapEngine;
+        let name = this._getMapEngineName(ctx);
 
-        this._json(ctx, requestBody);
+        this._mapEnginesCache.set(name, mapEngine);
+        this._clearMapTileCache(name);
+        this._json(ctx, mapEngine.toJSON());
     }
 
     private async $getMapXyzTile(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const tileCache = this._getMapTileCache(ctx);
         const { z, x, y } = ctx.params;
-
-        let image = await mapEngine.xyz(x, y, z);
-        let imageBuffer = ctx.body = image.toBuffer();
-
+        const tileName = `${z}-${x}-${y}`;
+        
+        let imageBuffer: Buffer|undefined;
+        if (tileCache !== undefined && tileCache._cache.has(tileName)) {
+            imageBuffer = tileCache.get(tileName);
+        }
+        
+        if (imageBuffer === undefined) {
+            const mapEngine = this._getMapEngine(ctx);
+            let image = await mapEngine.xyz(x, y, z);
+            imageBuffer = image.toBuffer();
+            tileCache?.push(tileName, imageBuffer);
+        }
+        
         ctx.type = 'png';
+        ctx.body = imageBuffer;
         ctx.length = imageBuffer.length;
     }
 
@@ -90,7 +152,7 @@ export class MapRouter {
             ctx.throw(400, new Error('Intersection parameter is not valid. Be sure the geom, geomSrs, level and tolerance are properly set.'));
         }
 
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         let geom: Geometry;
         if (params.geom!.length === 2) {
             const [x, y] = params.geom!;
@@ -118,13 +180,13 @@ export class MapRouter {
     }
 
     private $getLayerGroups(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const groups = mapEngine.groups.map(g => g.toJSON());
         this._json(ctx, groups);
     }
 
     private async $getLayerGroup(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const group = mapEngine.group(ctx.params.group);
         if (group === undefined) {
             this._notFound(ctx, `Group ${ctx.params.group} is not found.`);
@@ -135,7 +197,7 @@ export class MapRouter {
     }
 
     private $getLayers(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const group = mapEngine.group(ctx.params.group);
         if (group === undefined) {
             this._notFound(ctx, `Group ${ctx.params.group} is not found.`);
@@ -146,7 +208,7 @@ export class MapRouter {
     }
 
     private async $getLayer(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
@@ -169,7 +231,7 @@ export class MapRouter {
     }
 
     private async $getFeatures(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
@@ -192,7 +254,7 @@ export class MapRouter {
     }
 
     private async $queryFeatures(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
@@ -223,7 +285,7 @@ export class MapRouter {
     }
 
     private async $getProperties(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
@@ -244,7 +306,7 @@ export class MapRouter {
     }
 
     private async $getProperty(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);
@@ -269,7 +331,7 @@ export class MapRouter {
     }
 
     private async $getFields(ctx: RouterContext) {
-        const mapEngine = this._getMapEngine();
+        const mapEngine = this._getMapEngine(ctx);
         const layer = mapEngine.layer(ctx.params.layer, ctx.params.group);
         if (layer === undefined) {
             this._notFound(ctx, `Layer ${ctx.params.layer} is not found in group ${ctx.params.group}.`);

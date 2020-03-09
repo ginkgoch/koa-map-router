@@ -4,9 +4,10 @@ import { MapEngine, Srs, ShapefileFeatureSource, FeatureLayer, FillStyle, Projec
 const CRS_GOOGLE = 'EPSG:900913';
 
 export class MapUtils {
-    static getInitMapEngine(): MapEngine {
+    static getInitMapEngine(name: string): MapEngine {
         // Create a engine with size 256 * 256 pixels
         let mapEngine = new MapEngine(256, 256);
+        mapEngine.name = name;
 
         // Init the map rendering spatial reference system
         mapEngine.srs = new Srs(CRS_GOOGLE);
