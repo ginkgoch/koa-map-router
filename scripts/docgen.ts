@@ -8,6 +8,12 @@ function docGen() {
     let builder = new MDBuilder();
     builder.writeH2('Predefined APIs');
     builder.writeLine(contentJSON.info.description);
+    builder.writeLine();
+
+    contentJSON.item.forEach((api: any) => {
+        builder.writeLine(`* [${api.name}](#${api.name.toLowerCase().split(' ').join('-')})`);
+    });
+    builder.writeLine();
     
     contentJSON.item.forEach((api: any) => {
         builder.writeLine();
@@ -53,6 +59,7 @@ class MDBuilder {
     }
 
     writeCode(script: string, tag: string = 'json') {
+        script = script.replace(/\/Users\/[\w\/.-]+\/data/gmi, './data')
         this.writeLine(`\`\`\`${tag}\n${script}\n\`\`\``);
     }
 }
