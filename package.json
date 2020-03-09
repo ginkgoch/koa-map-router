@@ -23,15 +23,21 @@
     "ts-node": "^8.6.2",
     "typescript": "^3.5.3",
     "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.6"
-  },
-  "dependencies": {
-    "canvas": "^2.6.1",
-    "ginkgoch-map": "^1.12.2",
+    "webpack-cli": "^3.3.6",
     "koa": "^2.11.0",
     "koa-body": "^4.1.1",
     "koa-router": "^8.0.8",
     "lodash": "^4.17.15"
+  },
+  "peerDependencies": {
+    "koa": "^2.11.0",
+    "koa-body": "^4.1.1",
+    "koa-router": "^8.0.8",
+    "lodash": "^4.17.15"
+  },
+  "dependencies": {
+    "canvas": "^2.6.1",
+    "ginkgoch-map": "^1.12.2"
   },
   "scripts": {
     "test": "ts-node tests/index.ts",
