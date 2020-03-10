@@ -5,6 +5,7 @@ import { MapEngine, Geometry, Point, GeometryFactory, ViewportUtils, Projection,
 import { FilterUtils, MapUtils } from '../shared';
 
 export interface MapRouterOptions {
+    maps?: Array<MapEngine>;
     initMap?: (name: string) => MapEngine;
     enableTileCache?: boolean;
     cacheTilesCapacity?: number;
@@ -16,7 +17,22 @@ export class MapRouter {
     private _mapTileCache = new Map<string, TileCache<Buffer>>();
 
     constructor(mapRouterOptions?: MapRouterOptions) {
-        this._options = _.defaults(mapRouterOptions, { initMap: () => new MapEngine(), enableTileCache: true, cacheTilesCapacity: 128 });
+        this._options = _.defaults(mapRouterOptions, { 
+            enableTileCache: true, 
+            cacheTilesCapacity: 128, 
+            initMap: (name: string) => { 
+                const mapEngine = new MapEngine(256, 256);
+                mapEngine.name = name;
+                return mapEngine;
+            } 
+        });
+        if (this._options.maps !== undefined) {
+            this._options.maps.forEach(m => this.maps.set(m.name, m));
+        }
+    }
+
+    get maps() {
+        return this._mapEnginesCache;
     }
 
     getRouter(): Router {
@@ -51,6 +67,12 @@ export class MapRouter {
         return router;
     }
 
+    /**
+     * Get map instance from cache, 
+     * if not exists, init map if initMap handler is set
+     * otherwise, throw 404
+     * @param {RouterContext} ctx 
+     */
     private _getMapEngine(ctx: RouterContext) {
         let name = this._getMapEngineName(ctx);
 
@@ -59,7 +81,7 @@ export class MapRouter {
             mapEngine = this._mapEnginesCache.get(name);
         }
 
-        if (mapEngine === undefined) {
+        if (mapEngine === undefined && this._options.initMap !== undefined) {
             mapEngine = this._options.initMap!(name);
             this._mapEnginesCache.set(name, mapEngine);
         }
